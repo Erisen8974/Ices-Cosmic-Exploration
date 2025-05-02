@@ -1,4 +1,5 @@
 ﻿using ECommons.Automation;
+using ECommons.Logging;
 using ECommons.Throttlers;
 using static ECommons.UIHelpers.AddonMasterImplementations.AddonMaster;
 
@@ -9,6 +10,12 @@ namespace ICE.Scheduler.Tasks
         public static void Enqueue()
         {
             P.TaskManager.Enqueue(() => CloseMissionWindow(), "Closing Mission Window");
+            if (SchedulerMain.TargetResearchState != SchedulerMain.ResearchTargetState.None)
+            {
+                P.TaskManager.Enqueue(() => CloseResearchWindow(), "Closing Research Window");
+                P.TaskManager.EnqueueDelay(500);
+                P.TaskManager.Enqueue(() => OpenResearchWindow(), "Opening Research Window");
+            }
             P.TaskManager.Enqueue(() => OpenMissionWindow(), "Opening Mission Window");
         }
 
@@ -35,6 +42,41 @@ namespace ICE.Scheduler.Tasks
             {
                 if (EzThrottler.Throttle("Opening the mission hud"))
                     SpaceHud.Mission();
+            }
+
+            return false;
+        }
+
+        internal unsafe static bool? CloseResearchWindow()
+        {
+            if (!IsAddonActive("WKSToolCustomize"))
+                return true;
+
+            if (TryGetAddonMaster<WKSHud>("WKSHud", out var SpaceHud) && SpaceHud.IsAddonReady)
+            {
+                if (EzThrottler.Throttle("Closing the Research hud"))
+                    SpaceHud.Research();
+            }
+
+            return false;
+        }
+
+        internal unsafe static bool? OpenResearchWindow()
+        {
+            if (!EzThrottler.Throttle("Opening the Research hud"))
+                return false;
+
+            if (TryGetAddonMaster<WKSToolCustomize>("WKSToolCustomize", out var ResearchWindow) && ResearchWindow.IsAddonReady)
+            {
+                SchedulerMain.CurrentResearch = ResearchWindow.CurrentResearch;
+                SchedulerMain.LevelResearch = ResearchWindow.TargetResearch;
+                SchedulerMain.MaxResearch = ResearchWindow.MaxResearch;
+                return true;
+            }
+
+            if (TryGetAddonMaster<WKSHud>("WKSHud", out var SpaceHud) && SpaceHud.IsAddonReady)
+            {
+                    SpaceHud.Research();
             }
 
             return false;

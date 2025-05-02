@@ -81,6 +81,18 @@ namespace ICE.Scheduler.Tasks
                 }
                 P.TaskManager.EnqueueDelay(1500);
 
+                if (C.Once && scores.currentScore>=scores.goldScore)
+                {
+                    PluginDebug($"Turning in gold in another spot: {SchedulerMain.MissionName}");
+                    C.EnabledMission.RemoveAll(e => e.Name == SchedulerMain.MissionName);
+                    C.TimedMissions.RemoveAll(e => e.Name == SchedulerMain.MissionName);
+                    C.WeatherMissions.RemoveAll(e => e.Name == SchedulerMain.MissionName);
+                    C.CriticalMissions.RemoveAll(e => e.Name == SchedulerMain.MissionName);
+                    C.SequenceMissions.RemoveAll(e => e.Name == SchedulerMain.MissionName);
+                    C.StandardMissions.RemoveAll(e => e.Name == SchedulerMain.MissionName);
+                    C.Save();
+                }
+
                 P.TaskManager.Enqueue(TurnInInternals, "Changing to grab mission");
             }
         }

@@ -35,6 +35,9 @@ namespace ICE
         public bool ShowExpColums { get; set; } = true;
         public bool ShowCreditsColumn { get; set; } = true;
 
+        public bool Once = false;
+
+
         public void Save()
         {
             EzConfig.Save();

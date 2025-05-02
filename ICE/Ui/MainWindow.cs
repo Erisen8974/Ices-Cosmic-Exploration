@@ -106,6 +106,7 @@ namespace ICE.Ui
         private static int SortOption = C.TableSortOption;
         private static bool showExp = C.ShowExpColums;
         private static bool showCredits = C.ShowCreditsColumn;
+        private static bool once = C.Once;
 
         /// <summary>
         /// Primary draw method. Responsible for drawing the entire UI of the main window.
@@ -164,6 +165,34 @@ namespace ICE.Ui
 
             ImGui.SameLine();
             ImGui.Checkbox("Stop after current mission", ref SchedulerMain.StopBeforeGrab);
+
+            if (SchedulerMain.TargetResearchState != SchedulerMain.ResearchTargetState.None)
+            {
+                ImGui.Spacing();
+                ImGui.Text("Target Research: ");
+                for (int research = 0; research < SchedulerMain.TargetResearch.Length; research++)
+                {
+                    ImGui.SameLine();
+                    string romanNumeral = ConvertToRoman(research + 1);
+                    Vector4 color = SchedulerMain.TargetResearch[research] ? new Vector4(0.0f, 1.0f, 0.0f, 1.0f) : new Vector4(0.5f, 0.5f, 0.5f, 1.0f);
+                    ImGui.TextColored(color, romanNumeral);
+                }
+            }
+            ImGui.Text("Target Research Mode:");
+            if (ImGui.RadioButton("Max", SchedulerMain.TargetResearchState == SchedulerMain.ResearchTargetState.Max))
+            {
+                SchedulerMain.TargetResearchState = SchedulerMain.ResearchTargetState.Max;
+            }
+            ImGui.SameLine();
+            if (ImGui.RadioButton("Levels", SchedulerMain.TargetResearchState == SchedulerMain.ResearchTargetState.Levels))
+            {
+                SchedulerMain.TargetResearchState = SchedulerMain.ResearchTargetState.Levels;
+            }
+            ImGui.SameLine();
+            if (ImGui.RadioButton("None", SchedulerMain.TargetResearchState == SchedulerMain.ResearchTargetState.None))
+            {
+                SchedulerMain.TargetResearchState = SchedulerMain.ResearchTargetState.None;
+            }
 
             if (C.AutoPickCurrentJob && usingSupportedJob)
             {    
@@ -507,6 +536,15 @@ namespace ICE.Ui
                 C.Save();
             }
 
+            if (ImGui.Checkbox("Mission Priority Once", ref once))
+            {
+                if (once != C.Once)
+                {
+                    C.Once = once;
+                    C.Save();
+                }
+            }
+
             if (ImGui.Checkbox("Auto Pick Current Job", ref autoPickCurrentJob))
             {
                 C.AutoPickCurrentJob = autoPickCurrentJob;
@@ -611,5 +649,5 @@ namespace ICE.Ui
     }
 }
 
-    
+
 
