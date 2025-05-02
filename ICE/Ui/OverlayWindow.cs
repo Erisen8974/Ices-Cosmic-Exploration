@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using Dalamud.Interface.Utility.Raii;
 using ICE.Scheduler;
+using ICE.Scheduler.Handlers;
 
 namespace ICE.Ui
 {
@@ -24,6 +25,13 @@ namespace ICE.Ui
         public override void Draw()
         {
             ImGui.Text($"Current state: " + SchedulerMain.State.ToString());
+            ImGui.Spacing();
+
+            (string currentWeather, string nextWeather, string nextWeatherTime) = WeatherForecastHandler.GetNextWeather();
+
+            ImGui.Text($"Current Weather: {currentWeather}");
+            ImGui.Spacing();
+            ImGui.Text($"Next Weather: {nextWeather} in [{nextWeatherTime}]");
             ImGui.Spacing();
 
             if (ImGuiEx.IconButton("\uf013##Config", "Open ICE"))

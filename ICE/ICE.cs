@@ -84,6 +84,7 @@ public sealed class ICE : IDalamudPlugin
         if (Svc.ClientState.LocalPlayer != null)
         {
             SchedulerMain.Tick();
+            WeatherForecastHandler.Tick();
         }
         GenericManager.Tick();
         PlayerHandlers.Tick();

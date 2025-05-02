@@ -366,7 +366,13 @@ public static unsafe class Utils
                     var item2Id = MoonItemInfo.GetRow(toDoRow.Unknown4).Unknown0;
                     var item2Name = ItemSheet.GetRow(item2Id).Name.ToString();
 
-                    var item2RecipeRow = RecipeSheet.FirstOrDefault(e => e.ItemResult.RowId == item2Id);
+                    var item2RecipeRow = RecipeSheet.Where(e => e.ItemResult.RowId == item2Id)
+                                                    .Where(e => e.RowId == MoonRecipeSheet.GetRow(RecipeId).Unknown0 ||
+                                                                e.RowId == MoonRecipeSheet.GetRow(RecipeId).Unknown1 ||
+                                                                e.RowId == MoonRecipeSheet.GetRow(RecipeId).Unknown2 ||
+                                                                e.RowId == MoonRecipeSheet.GetRow(RecipeId).Unknown3 ||
+                                                                e.RowId == MoonRecipeSheet.GetRow(RecipeId).Unknown4)
+                                                    .First();
                     PluginDebug($"Recipe Row ID: {item2RecipeRow.RowId} | for item: {item2Id}");
                     for (var i = 0; i <= 5; i++)
                     {
