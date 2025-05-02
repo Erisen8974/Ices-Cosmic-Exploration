@@ -51,6 +51,13 @@ namespace ICE.Scheduler.Tasks
                         TurnIn(z);
                         return;
                     }
+
+                    if (!TaskCrafting.AnyIngredientsRemaining())
+                    {
+                        PluginDebug("[Score Checker] No ingredients remaining, turning in now");
+                        TurnIn(z);
+                        return;
+                    }
                 }
 
                 PluginDebug($"[Score Checker] Player is in state: {string.Join(',', Svc.Condition.AsReadOnlySet().Select(x => x.ToString()))}");

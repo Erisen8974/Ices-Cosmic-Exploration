@@ -345,5 +345,63 @@ namespace ICE.Scheduler.Tasks
             }
             return true;
         }
+
+        public static bool AnyIngredientsRemaining()
+        {
+            EnsureInit();
+            // Check main crafts
+            foreach (var main in MoonRecipies[CurrentLunarMission].MainCraftsDict)
+            {
+                var recipe = RecipeSheet.GetRow(main.Key);
+
+                bool canCraft = true;
+                foreach (var ingredientEntry in recipe.Ingredient.Select((value, index) => new { value, index }))
+                {
+                    var ingredient = ingredientEntry.value.Value;
+
+                    var requiredAmount = recipe.AmountIngredient[ingredientEntry.index].ToInt();
+                    var currentAmount = GetItemCount((int)ingredient.RowId);
+
+                    if (currentAmount < requiredAmount)
+                    {
+                        canCraft = false;
+                        break;
+                    }
+                }
+
+                if (canCraft)
+                {
+                    return true;
+                }
+            }
+
+            // Check pre-crafts
+            foreach (var pre in MoonRecipies[CurrentLunarMission].PreCraftDict)
+            {
+                var recipe = RecipeSheet.GetRow(pre.Key);
+
+                bool canCraft = true;
+                foreach (var ingredientEntry in recipe.Ingredient.Select((value, index) => new { value, index }))
+                {
+                    var ingredient = ingredientEntry.value.Value;
+
+                    var requiredAmount = recipe.AmountIngredient[ingredientEntry.index].ToInt();
+                    var currentAmount = GetItemCount((int)ingredient.RowId);
+
+                    if (currentAmount < requiredAmount)
+                    {
+                        canCraft = false;
+                        break;
+                    }
+                }
+
+                if (canCraft)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }
