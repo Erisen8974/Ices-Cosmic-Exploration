@@ -14,11 +14,21 @@ using static ECommons.UIHelpers.AddonMasterImplementations.AddonMaster;
 
 namespace ICE.Scheduler.Tasks
 {
+    internal enum MissionTab
+    {
+        Critical,
+        Provisional,
+        Basic
+    }
+
     internal static class TaskMissionFind
     {
         private static uint MissionId = 0;
         private static int MissionScore = 0;
+        private static MissionTab MissionTab = MissionTab.Critical;
+        private static MissionTab CurrentTab = MissionTab.Critical;
         private static uint currentClassJob => GetClassJobId();
+        
         private static bool isGatherer => currentClassJob >= 16 && currentClassJob <= 18;
         private static bool hasCritical => C.EnabledMission
                                             .Where(e => MissionInfoDict[e.Id].JobId == currentClassJob)
@@ -101,18 +111,21 @@ namespace ICE.Scheduler.Tasks
             // if (hasCritical) {
             P.TaskManager.Enqueue(() => CriticalButton(), "Selecting Critical Mission");
             P.TaskManager.EnqueueDelay(200);
-            P.TaskManager.Enqueue(() => FindCriticalMission(), "Checking to see if critical mission available");
+            P.TaskManager.Enqueue(() => FindMission(), "Checking to see if critical mission available");
             // }
             //if (hasWeather || hasTimed || hasSequence) // Skip Checks if enabled mission doesn't have weather, timed or sequence?
             //{
             P.TaskManager.Enqueue(() => WeatherButton(), "Selecting Weather");
             P.TaskManager.EnqueueDelay(200);
-            P.TaskManager.Enqueue(() => FindWeatherMission(), "Checking to see if weather mission avaialable");
+            P.TaskManager.Enqueue(() => FindMission(), "Checking to see if weather mission avaialable");
             //}
             P.TaskManager.Enqueue(() => BasicMissionButton(), "Selecting Basic Missions");
             P.TaskManager.EnqueueDelay(200);
-            P.TaskManager.Enqueue(() => FindBasicMission(), "Finding Basic Mission");
+            P.TaskManager.Enqueue(() => FindMission(), "Finding Basic Mission");
             P.TaskManager.Enqueue(() => FindResetMission(), "Checking for abandon mission");
+            P.TaskManager.Enqueue(() => OpenMissionTab(), "Returning to target mission tab");
+            P.TaskManager.EnqueueDelay(200);
+            P.TaskManager.Enqueue(() => TargetMission(), "Returning to target mission tab");
             P.TaskManager.Enqueue(() => GrabMission(), "Grabbing the mission");
             P.TaskManager.EnqueueDelay(250);
             P.TaskManager.Enqueue(() => AbandonMission(), "Checking to see if need to leave mission");
@@ -158,6 +171,14 @@ namespace ICE.Scheduler.Tasks
             {
                 return 0;
             }
+            if (UnsupportedMissions.Ids.Contains(mission.MissionId))
+            {
+                return 0;
+            }
+            if (C.DisabledMissions.Any(e => e.Id == mission.MissionId))
+            {
+                return 0;
+            }
             int score = 0;
             int type = 1;
             foreach (var target in SchedulerMain.TargetResearch)
@@ -169,9 +190,25 @@ namespace ICE.Scheduler.Tasks
                 type++;
             }
 
+            if (SchedulerMain.TargetLunarCredits)
+                score += (int)MissionInfoDict[mission.MissionId].LunarCredit;
+            if (SchedulerMain.TargetCosmoCredits)
+                score += (int)MissionInfoDict[mission.MissionId].CosmoCredit;
+
             if (C.EnabledMission.Any(e => e.Id == mission.MissionId))
             {
-                score += 100;
+                if (C.CriticalMissions.Any(e => e.Id == mission.MissionId))
+                    score += 6000;
+                else if (C.WeatherMissions.Any(e => e.Id == mission.MissionId))
+                    score += 5000;
+                else if (C.TimedMissions.Any(e => e.Id == mission.MissionId))
+                    score += 4000;
+                else if (C.SequenceMissions.Any(e => e.Id == mission.MissionId))
+                    score += 3000;
+                else if (C.StandardMissions.Any(e => e.Id == mission.MissionId))
+                    score += 2000;
+                else
+                    score += 1000;
             }
             return score;
         }
@@ -191,6 +228,7 @@ namespace ICE.Scheduler.Tasks
             if (TryGetAddonMaster<WKSMission>("WKSMission", out var x) && x.IsAddonReady)
             {
                 x.CriticalMissions();
+                CurrentTab = MissionTab.Critical;
                 return true;
             }
             return false;
@@ -201,6 +239,7 @@ namespace ICE.Scheduler.Tasks
             if (TryGetAddonMaster<WKSMission>("WKSMission", out var x) && x.IsAddonReady)
             {
                 x.ProvisionalMissions();
+                CurrentTab = MissionTab.Provisional;
                 return true;
             }
             return false;
@@ -208,18 +247,32 @@ namespace ICE.Scheduler.Tasks
 
         internal unsafe static bool? BasicMissionButton()
         {
-            if (MissionId != 0)
-            {
-                return true;
-            }
-
             if (TryGetAddonMaster<WKSMission>("WKSMission", out var x) && x.IsAddonReady)
             {
                 x.BasicMissions();
+                CurrentTab = MissionTab.Basic;
                 return true;
             }
             return false;
         }
+
+        internal unsafe static bool? OpenMissionTab()
+        {
+            switch (MissionTab)
+            {
+                case MissionTab.Critical:
+                    return CriticalButton();
+                case MissionTab.Provisional:
+                    return WeatherButton();
+                case MissionTab.Basic:
+                    return BasicMissionButton();
+                default:
+                    PluginLog.Debug($"[OpenMissionTab] CurrentTab is not set to a valid value: {CurrentTab}");
+                    SchedulerMain.State = IceState.Idle;
+                    return false;
+            }
+        }
+
 
         internal unsafe static bool? OpenMissionFinder()
         {
@@ -239,134 +292,61 @@ namespace ICE.Scheduler.Tasks
             return false;
         }
 
-        internal unsafe static void FindCriticalMission()
+        internal unsafe static void FindMission()
         {
             if (TryGetAddonMaster<WKSMission>("WKSMission", out var x) && x.IsAddonReady)
             {
-                x.ProvisionalMissions();
                 foreach (var m in x.StellerMissions)
                 {
-                    var criticalMissionEntry = C.EnabledMission.FirstOrDefault(e => e.Id == m.MissionId && MissionInfoDict[e.Id].JobId == currentClassJob);
-
-                    if (criticalMissionEntry == default)
-                    {
-                        PluginDebug($"critical mission entry is default. Which means id: {criticalMissionEntry}");
-                        continue;
-                    }
-
                     var score = ScoreMission(m);
                     if (score <= MissionScore)
                         continue;
-
                     MissionScore = score;
-                    if (EzThrottler.Throttle("Selecting Critical Mission"))
-                    {
-                        PluginLog.Debug($"Mission Name: {m.Name} | MissionId: {criticalMissionEntry.Id} has been found. Setting value for sending");
-                        SelectMission(m);
-                    }
+
+                    PluginLog.Debug($"Mission Name: {m.Name} | MissionId: {m.MissionId} has been found. Setting value for sending");
+                    SelectMission(m);
                 }
             }
 
             if (MissionId == 0)
             {
-                PluginLog.Debug("No mission was found under weather, continuing on");
+                PluginLog.Debug($"No mission was found on tab {CurrentTab}, continuing on");
             }
         }
 
-        internal unsafe static void FindWeatherMission()
+
+        private static bool TargetMission()
         {
+            if (!EzThrottler.Throttle($"Selecting {CurrentTab} Mission"))
+                return false;
             if (TryGetAddonMaster<WKSMission>("WKSMission", out var x) && x.IsAddonReady)
             {
-                x.ProvisionalMissions();
-                var currentClassJob = GetClassJobId();
-
-                var weatherIds = C.WeatherMissions.Select(w => w.Id).ToHashSet();
-                var sequenceIds = C.SequenceMissions.Select(s => s.Id).ToHashSet();
-                var timedIds = C.TimedMissions.Select(t => t.Id).ToHashSet();
-
-                var sortedMissions = x.StellerMissions
-                    .Where(m => weatherIds.Contains(m.MissionId))
-                    .Concat(
-                        x.StellerMissions.Where(m =>
-                            !weatherIds.Contains(m.MissionId) && !sequenceIds.Contains(m.MissionId))
-                    )
-                    .Concat(
-                        x.StellerMissions.Where(m =>
-                            !weatherIds.Contains(m.MissionId) && !timedIds.Contains(m.MissionId))
-                    )
-                    .ToArray();
-
-                foreach (var m in sortedMissions)
+                foreach (var m in x.StellerMissions)
                 {
-                    var criticalMissionEntry = C.EnabledMission.FirstOrDefault(e => e.Id == m.MissionId && MissionInfoDict[e.Id].JobId == currentClassJob);
-
-                    if (criticalMissionEntry == default)
+                    if (m.MissionId == MissionId)
                     {
-                        PluginDebug($"critical mission entry is default. Which means id: {criticalMissionEntry}");
-                        continue;
-                    }
-
-                    var score = ScoreMission(m);
-                    if (score <= MissionScore)
-                        continue;
-
-                    MissionScore = score;
-
-                    if (EzThrottler.Throttle("Selecting Critical Mission"))
-                    {
-                        PluginLog.Debug($"Mission Name: {m.Name} | MissionId: {criticalMissionEntry.Id} has been found. Setting value for sending");
-                        SelectMission(m);
+                        m.Select();
+                        SchedulerMain.MissionName = m.Name;
+                        return true;
                     }
                 }
             }
-
-            if (MissionId == 0)
-            {
-                PluginLog.Debug("No mission was found under weather, continuing on");
-            }
+            return false;
         }
 
         private static void SelectMission(WKSMission.StellarMissions m)
         {
-            m.Select();
-            SchedulerMain.MissionName = m.Name;
             MissionId = m.MissionId;
+            MissionTab = CurrentTab;
         }
 
-        internal unsafe static void FindBasicMission()
-        {
-            PluginLog.Debug($"[Basic Mission Start] | Mission Name: {SchedulerMain.MissionName} | MissionId: {MissionId}");
-
-
-            if (TryGetAddonMaster<WKSMission>("WKSMission", out var x) && x.IsAddonReady)
-            {
-                foreach (var m in x.StellerMissions)
-                {
-                    var score = ScoreMission(m);
-                    if (score <= MissionScore)
-                        continue;
-
-                    MissionScore = score;
-                    if (EzThrottler.Throttle("Selecting Basic Mission"))
-                    {
-                        PluginLog.Debug($"Mission Name: {m.Name} | MissionId: {m.MissionId} has been found. Setting value for sending");
-                        SelectMission(m);
-                    }
-                }
-            }
-
-            if (MissionId == 0)
-            {
-                PluginLog.Debug("No mission was found under basic missions, continuing on");
-            }
-        }
 
         internal unsafe static bool? FindResetMission()
         {
             PluginLog.Debug($"[Reset Mission Finder] Mission Name: {SchedulerMain.MissionName} | MissionId {MissionId}");
             if (MissionId != 0)
             {
-                PluginLog.Debug("You already have a mission found, skipping finding a basic mission");
+                PluginLog.Debug("You already have a mission found, skipping finding a reset mission");
                 return true;
             }
 
@@ -378,7 +358,7 @@ namespace ICE.Scheduler.Tasks
                     .Where(e => MissionInfoDict[e.Id].JobId == currentClassJob)
                     .Select(e => MissionInfoDict[e.Id].Rank)
                     .ToList();
-                if (ranks.Count == 0 && !SchedulerMain.TargetResearch.Any(e => e))
+                if (ranks.Count == 0 && !SchedulerMain.TargetResearch.Any(e => e) && !SchedulerMain.TargetLunarCredits && !SchedulerMain.TargetCosmoCredits)
                 {
                     PluginLog.Debug("No missions selected in UI, would abandon every mission");
                     SchedulerMain.State = IceState.Idle;
@@ -386,7 +366,6 @@ namespace ICE.Scheduler.Tasks
                     SchedulerMain.StopOnceHitCredits = false;
                     return false;
                 }
-
                 var rankToReset = ranks.Max();
 
                 foreach (var m in x.StellerMissions)
@@ -405,6 +384,7 @@ namespace ICE.Scheduler.Tasks
                             m.Select();
                             SchedulerMain.MissionName = m.Name;
                             MissionId = missionEntry.Key;
+                            MissionTab = CurrentTab;
                             SchedulerMain.Abandon = true;
 
                             PluginLog.Debug($"Mission Name: {SchedulerMain.MissionName}");

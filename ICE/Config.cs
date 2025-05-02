@@ -11,6 +11,7 @@ namespace ICE
 
         // Missions the user has enabled
         public List<(uint Id, string Name)> EnabledMission { get; set; } = new List<(uint, string)>();
+        public List<(uint Id, string Name)> DisabledMissions { get; set; } = new List<(uint, string)>();
         public List<(uint Id, string Name)> CriticalMissions { get; set; } = new List<(uint, string)>();
         public List<(uint Id, string Name)> TimedMissions { get; set; } = new List<(uint, string)>();
         public List<(uint Id, string Name)> WeatherMissions { get; set; } = new List<(uint, string)>();

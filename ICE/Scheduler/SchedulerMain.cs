@@ -35,6 +35,8 @@ namespace ICE.Scheduler
         }
 
         internal static ResearchTargetState TargetResearchState = ResearchTargetState.None;
+        internal static bool TargetCosmoCredits = false;
+        internal static bool TargetLunarCredits = false;
 
         internal static bool[] TargetResearch {
             get {

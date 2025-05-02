@@ -166,9 +166,10 @@ namespace ICE.Ui
             ImGui.SameLine();
             ImGui.Checkbox("Stop after current mission", ref SchedulerMain.StopBeforeGrab);
 
+            ImGui.Spacing();
+
             if (SchedulerMain.TargetResearchState != SchedulerMain.ResearchTargetState.None)
             {
-                ImGui.Spacing();
                 ImGui.Text("Target Research: ");
                 for (int research = 0; research < SchedulerMain.TargetResearch.Length; research++)
                 {
@@ -193,6 +194,12 @@ namespace ICE.Ui
             {
                 SchedulerMain.TargetResearchState = SchedulerMain.ResearchTargetState.None;
             }
+
+            ImGui.Checkbox("Target Cosmocredits", ref SchedulerMain.TargetCosmoCredits);
+            ImGui.SameLine();
+            ImGui.Checkbox("Target Lunar Credits", ref SchedulerMain.TargetLunarCredits);
+
+            ImGui.Spacing();
 
             if (C.AutoPickCurrentJob && usingSupportedJob)
             {    
@@ -306,7 +313,7 @@ namespace ICE.Ui
                 ImGui.Spacing();
                 // Missions table with four columns: checkbox, ID, dynamic Rank header, Rewards.
 
-                int columnAmount = 4;
+                int columnAmount = 5;
                 if (showCredits)
                     columnAmount += 2;
                 if (showExp)
@@ -324,7 +331,9 @@ namespace ICE.Ui
                     int columnIndex = 0;
 
                     // First column: checkbox (empty header)
-                    ImGui.TableSetupColumn("Enable##Enable");
+                    ImGui.TableSetupColumn("Priority##Enable");
+                    columnIndex++;
+                    ImGui.TableSetupColumn("Disable##Disable");
                     columnIndex++;
 
                     // Second column: ID
@@ -407,7 +416,7 @@ namespace ICE.Ui
                                 ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
 
                             // Use an invisible label for the checkbox to avoid text spacing
-                            if (ImGui.Checkbox($"###{entry.Value.Name}_{entry.Key}", ref enabled))
+                            if (ImGui.Checkbox($"###{entry.Value.Name}_{entry.Key}_enable", ref enabled))
                             {
                                 if (enabled)
                                     C.EnabledMission.Add((entry.Key, entry.Value.Name));
@@ -416,7 +425,30 @@ namespace ICE.Ui
 
                                 C.Save();
                             }
+                        }
 
+                        ImGui.TableNextColumn();
+                        bool disabled = C.DisabledMissions.Any(x => x.Id == entry.Key) || unsupported;
+                        using (ImRaii.Disabled(unsupported))
+                        {
+                            // Estimate the width of the checkbox (label is invisible, so the box is all that matters)
+                            float cellWidth = ImGui.GetContentRegionAvail().X;
+                            float checkboxWidth = ImGui.GetFrameHeight(); // Width of the square checkbox only
+                            float offset = (cellWidth - checkboxWidth) * 0.5f;
+
+                            if (offset > 0f)
+                                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
+
+                            // Use an invisible label for the checkbox to avoid text spacing
+                            if (ImGui.Checkbox($"###{entry.Value.Name}_{entry.Key}_disable", ref disabled))
+                            {
+                                if (disabled)
+                                    C.DisabledMissions.Add((entry.Key, entry.Value.Name));
+                                else
+                                    C.DisabledMissions.Remove((entry.Key, entry.Value.Name));
+
+                                C.Save();
+                            }
                         }
 
                         // Column 1: Mission ID

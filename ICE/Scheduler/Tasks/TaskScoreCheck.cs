@@ -62,7 +62,7 @@ namespace ICE.Scheduler.Tasks
 
                 PluginDebug($"[Score Checker] Player is in state: {string.Join(',', Svc.Condition.AsReadOnlySet().Select(x => x.ToString()))}");
                 PluginDebug($"[Score Checker] Artisan is busy?: {P.Artisan.IsBusy()}");
-                if ((Svc.Condition[ConditionFlag.PreparingToCraft] || Svc.Condition[ConditionFlag.NormalConditions]) && !P.Artisan.GetEnduranceStatus())
+                if ((Svc.Condition[ConditionFlag.PreparingToCraft] || Svc.Condition[ConditionFlag.NormalConditions]) && !P.Artisan.IsBusy())
                 {
                     PluginDebug("[Score Checker] Player is not busy but hasnt hit score, resetting state to try craft");
                     SchedulerMain.State = IceState.StartCraft;
@@ -92,11 +92,6 @@ namespace ICE.Scheduler.Tasks
                 {
                     PluginDebug($"Turning in gold in another spot: {SchedulerMain.MissionName}");
                     C.EnabledMission.RemoveAll(e => e.Name == SchedulerMain.MissionName);
-                    C.TimedMissions.RemoveAll(e => e.Name == SchedulerMain.MissionName);
-                    C.WeatherMissions.RemoveAll(e => e.Name == SchedulerMain.MissionName);
-                    C.CriticalMissions.RemoveAll(e => e.Name == SchedulerMain.MissionName);
-                    C.SequenceMissions.RemoveAll(e => e.Name == SchedulerMain.MissionName);
-                    C.StandardMissions.RemoveAll(e => e.Name == SchedulerMain.MissionName);
                     C.Save();
                 }
 
