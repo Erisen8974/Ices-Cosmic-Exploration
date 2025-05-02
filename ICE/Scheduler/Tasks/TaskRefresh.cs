@@ -11,12 +11,14 @@ namespace ICE.Scheduler.Tasks
         {
             P.TaskManager.Enqueue(() => CloseMissionWindow(), "Closing Mission Window");
             if (SchedulerMain.TargetResearchState != SchedulerMain.ResearchTargetState.None)
-            {
-                P.TaskManager.Enqueue(() => CloseResearchWindow(), "Closing Research Window");
-                P.TaskManager.EnqueueDelay(500);
-                P.TaskManager.Enqueue(() => OpenResearchWindow(), "Opening Research Window");
-            }
+                EnqueueResearch();
             P.TaskManager.Enqueue(() => OpenMissionWindow(), "Opening Mission Window");
+        }
+        public static void EnqueueResearch()
+        {
+            P.TaskManager.Enqueue(() => CloseResearchWindow(), "Closing Research Window");
+            P.TaskManager.EnqueueDelay(500);
+            P.TaskManager.Enqueue(() => OpenResearchWindow(), "Opening Research Window");
         }
 
         internal unsafe static bool? CloseMissionWindow()

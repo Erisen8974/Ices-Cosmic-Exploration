@@ -378,10 +378,12 @@ namespace ICE.Scheduler.Tasks
                     .Where(e => MissionInfoDict[e.Id].JobId == currentClassJob)
                     .Select(e => MissionInfoDict[e.Id].Rank)
                     .ToList();
-                if (ranks.Count == 0)
+                if (ranks.Count == 0 && !SchedulerMain.TargetResearch.Any(e => e))
                 {
                     PluginLog.Debug("No missions selected in UI, would abandon every mission");
-                    SchedulerMain.DisablePlugin();
+                    SchedulerMain.State = IceState.Idle;
+                    SchedulerMain.StopBeforeGrab = false;
+                    SchedulerMain.StopOnceHitCredits = false;
                     return false;
                 }
 

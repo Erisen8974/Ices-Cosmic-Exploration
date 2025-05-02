@@ -58,9 +58,7 @@ namespace ICE.Scheduler
             if (GenericThrottle && P.TaskManager.Tasks.Count == 0)
             {
                 if (TargetResearch.Length == 0 && TargetResearchState != ResearchTargetState.None)
-                {
-                    TaskRefresh.Enqueue();
-                }
+                    TaskRefresh.EnqueueResearch();
 
                 switch (State)
                 {
