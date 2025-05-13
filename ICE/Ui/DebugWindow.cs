@@ -129,6 +129,18 @@ internal class DebugWindow : Window
             ImGui.TreePop();
         }
 
+        if (ImGui.TreeNode("Class Data"))
+        {
+            if (TryGetAddonMaster<AddonMaster.WKSScoreList>("WKSScoreList", out var x) && x.IsAddonReady)
+            {
+                var curJob = GetClassJobId();
+                ImGui.Text($"Selected Class: {curJob}");
+
+                ImGui.Text($"Selected Class score: {x.Score(curJob)}");
+            }
+            ImGui.TreePop();
+        }
+
         if (ImGui.TreeNode("Missions"))
         {
             if (TryGetAddonMaster<WKSMission>("WKSMission", out var x) && x.IsAddonReady)

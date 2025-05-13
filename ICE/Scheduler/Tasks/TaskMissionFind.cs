@@ -258,6 +258,9 @@ namespace ICE.Scheduler.Tasks
 
         internal unsafe static bool? OpenMissionTab()
         {
+            if (LogThrottle)
+                PluginLog.Debug($"[OpenMissionTab] Returnbing to tab: {CurrentTab}");
+
             switch (MissionTab)
             {
                 case MissionTab.Critical:
@@ -381,10 +384,7 @@ namespace ICE.Scheduler.Tasks
                         if (EzThrottler.Throttle("Selecting Abandon Mission"))
                         {
                             PluginLog.Debug($"Setting SchedulerMain.MissionName = {m.Name}");
-                            m.Select();
-                            SchedulerMain.MissionName = m.Name;
-                            MissionId = missionEntry.Key;
-                            MissionTab = CurrentTab;
+                            SelectMission(m);
                             SchedulerMain.Abandon = true;
 
                             PluginLog.Debug($"Mission Name: {SchedulerMain.MissionName}");
